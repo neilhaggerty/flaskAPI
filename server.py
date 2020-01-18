@@ -1,11 +1,17 @@
-from flask import Flask, redirect, request, url_for
+from flask import Flask, redirect, request, url_for, make_response
 import json
 app = Flask(__name__)
 
-def get_posts_json():
+def get_posts():
     with open('posts.json') as f:
         posts = json.load(f)
     return posts
+
+def get_posts_json():
+    posts = get_posts()
+    resp = make_response(posts)
+    resp.headers['Content-type'] = 'application/json'
+    return resp
 
 def write_json(posts):
     with open('posts.json', 'w') as f:
@@ -22,13 +28,12 @@ def find_post_by_id(posts, _id):
 
 @app.route('/')
 def list_posts():
-    posts = get_posts_json()
-    return posts
+    return get_posts_json()
 
 @app.route('/post', methods=['POST'])
 def create_post():
     json_data = request.get_json()
-    posts = get_posts_json()
+    posts = get_posts()
     post_id = find_max_id(posts)+1
     posts['posts'].append({
         'id': post_id,
@@ -40,7 +45,7 @@ def create_post():
 
 @app.route('/post/<int:post_id>', methods=['DELETE'])
 def delete_post(post_id):
-    posts = get_posts_json()
+    posts = get_posts()
     post = find_post_by_id(posts, post_id)
     posts['posts'].remove(post)
     write_json(posts)
@@ -48,7 +53,7 @@ def delete_post(post_id):
 
 @app.route('/like/<int:post_id>', methods=['POST'])
 def upvote(post_id):
-    posts = get_posts_json()
+    posts = get_posts()
     post = find_post_by_id(posts, post_id)
     post.update({'likes': post['likes']+1})
     write_json(posts)
@@ -56,7 +61,7 @@ def upvote(post_id):
 
 @app.route('/dislike/<int:post_id>', methods=['POST'])
 def downvote(post_id):
-    posts = get_posts_json()
+    posts = get_posts()
     post = find_post_by_id(posts, post_id)
     post.update({'likes': post['likes']-1})
     write_json(posts)
